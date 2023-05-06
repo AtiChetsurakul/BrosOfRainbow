@@ -41,17 +41,17 @@ class Network_lstm(nn.Module):
         self.value_hidden_layer = NoisyLinear(128, 128, std_init=0.5)
         self.value_layer = NoisyLinear(128, atom_size, std_init=0.5)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, hidden = None) -> torch.Tensor:
         """Forward method implementation."""
-        dist = self.dist(x)
+        dist, hidden = self.dist(x, hidden)
         q = torch.sum(dist * self.support, dim=2) # [64, 7]
         
-        return q
+        return q, hidden
     
-    def dist(self, x: torch.Tensor) -> torch.Tensor:
+    def dist(self, x: torch.Tensor, hidden = None) -> torch.Tensor:
         """Get distribution for atoms."""
         feature = self.feature_layer(x)
-        feature = self.lstm(feature)
+        feature, hidden = self.lstm(feature, hidden)
         
         adv_hid = F.relu(self.advantage_hidden_layer(feature))
         val_hid = F.relu(self.value_hidden_layer(feature))
@@ -67,7 +67,7 @@ class Network_lstm(nn.Module):
 
         # [64, 7, 51]
         
-        return dist
+        return dist, hidden
     
     def reset_noise(self):
         """Reset all noisy layers."""

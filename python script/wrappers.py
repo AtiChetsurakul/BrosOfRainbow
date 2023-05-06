@@ -3,7 +3,8 @@ from gym.spaces import Box
 from gym.wrappers import FrameStack
 import gym
 import numpy as np
-
+import torch
+import torch.nn.functional as F
 class SkipFrame(gym.Wrapper):
     def __init__(self, env, skip):
         """Return only every `skip`-th frame"""

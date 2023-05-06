@@ -157,20 +157,21 @@ class Agent:
         # mode: train / test
         self.is_test = False
 
-    def select_action(self, state: np.ndarray) -> np.ndarray:
+    def select_action(self, state: np.ndarray, hidden = None) -> np.ndarray:
         """Select an action from the input state."""
         # NoisyNet: no epsilon greedy action selection
 
         # Convert input
         state = torch.FloatTensor(state).unsqueeze(0)
     
-        selected_action = self.dqn(state.to(self.device)).argmax()    
+        selected_action, h_t = self.dqn(state.to(self.device), hidden)
+        selected_action = selected_action.argmax()    
         selected_action = selected_action.detach().cpu().numpy()
         
         if not self.is_test:
             self.transition = [state, selected_action]
         
-        return selected_action
+        return selected_action, h_t
 
     def step(self, action: np.ndarray) -> Tuple[np.ndarray, np.float64, bool]:
         """Take an action and return the response of the env."""
@@ -260,11 +261,13 @@ class Agent:
         score = 0
         #counter = 0
 
+        hidden = None
+
         for frame_idx in range(1, num_frames + 1):
 
             # Modification to convert lazyframe object to numpy array.
             state = np.array(state)
-            action = self.select_action(state)
+            action, hidden = self.select_action(state, hidden)
             
             next_state, reward, done, info = self.step(action)
 
@@ -330,11 +333,13 @@ class Agent:
         scores = []
         score = 0
 
+        hidden = None
+
         for frame_idx in range(1, num_frames + 1):
             
             # Modification to convert lazyframe object to numpy array.
             state = np.array(state)
-            action = self.select_action(state)
+            action, hidden = self.select_action(state, hidden)
             
             next_state, reward, done, info = self.step(action)
 
@@ -393,10 +398,10 @@ class Agent:
         state = np.array(state)
         done = False
         score = 0
-        
+        hidden = None
         while not done:
             state = np.array(state)
-            action = self.select_action(state)
+            action, hidden = self.select_action(state, hidden)
             next_state, reward, done, info = self.step(action)
 
             state = next_state
@@ -417,6 +422,7 @@ class Agent:
         done = False
         score = 0
         counter = 0
+        hidden = None
         #while not done:
         while True:
             
@@ -425,7 +431,7 @@ class Agent:
                 state = np.array(state)
             
 
-            action = self.select_action(state)
+            action, hidden = self.select_action(state, hidden)
             next_state, reward, done, info = self.step(action)
             state = next_state
 
@@ -454,10 +460,13 @@ class Agent:
         # Categorical DQN algorithm
         delta_z = float(self.v_max - self.v_min) / (self.atom_size - 1)
 
+        hidden_dqn = None
+        hidden_target = None
         with torch.no_grad():
             # Double DQN
-            next_action = self.dqn(next_state).argmax(1)
-            next_dist = self.dqn_target.dist(next_state)
+            next_action, hidden_dqn = self.dqn(next_state, hidden_dqn)
+            next_action = next_action.argmax(1)
+            next_dist, hidden_target = self.dqn_target.dist(next_state, hidden_target)
             next_dist = next_dist[range(self.batch_size), next_action]
 
             t_z = reward + (1 - done) * gamma * self.support
@@ -483,7 +492,7 @@ class Agent:
                 0, (u + offset).view(-1), (next_dist * (b - l.float())).view(-1)
             )
 
-        dist = self.dqn.dist(state)
+        dist, hidden_dqn = self.dqn.dist(state, hidden_dqn)
         log_p = torch.log(dist[range(self.batch_size), action])
         elementwise_loss = -(proj_dist * log_p).sum(1)
 

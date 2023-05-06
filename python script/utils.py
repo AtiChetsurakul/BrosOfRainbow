@@ -6,7 +6,7 @@ from typing import Deque, Dict, List, Tuple
 import math
 import numpy as np
 import random
-
+import torch.nn.functional as F
 from segment_tree import MinSegmentTree, SumSegmentTree
 
 class ReplayBuffer:

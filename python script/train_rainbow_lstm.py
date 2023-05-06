@@ -9,7 +9,7 @@ import torch
 import numpy as np
 import random
 
-from agent import Agent
+from agent_lstm import Agent
 
 env = gym_super_mario_bros.make("SuperMarioBros-1-1-v3")
 force_right = ["right"], ["right", "A"]
@@ -34,14 +34,14 @@ seed_torch(seed)
 env.seed(seed)
 
 # parameters
-num_frames = 1
-memory_size = 10
-batch_size = 32
+num_frames = 1000000
+memory_size = 160000
+batch_size = 16
 target_update = 4
 
 # train
 # already tried (6.25e-5, 6.25e-7, 6.25e-10)
 agent = Agent(env, memory_size, batch_size, target_update, n_step=3, lr=6.25e-5, select_model='lstm')
 
-if __name__ == 'main':
-    agent.train_live(num_frames)
+if __name__ == '__main__':
+    agent.train(num_frames)

@@ -34,8 +34,8 @@ seed_torch(seed)
 env.seed(seed)
 
 # parameters
-num_frames = 1
-memory_size = 10
+num_frames = 1000000
+memory_size = 160000
 batch_size = 32
 target_update = 4
 
@@ -43,5 +43,6 @@ target_update = 4
 # already tried (6.25e-5, 6.25e-7, 6.25e-10)
 agent = Agent(env, memory_size, batch_size, target_update, n_step=3, lr=6.25e-5, select_model='dqn')
 
-if __name__ == 'main':
-    agent.train_live(num_frames)
+if __name__ == '__main__':
+    print('hi')
+    agent.train(num_frames)
